@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hazan</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body {
+      margin: 0;
+      width: 330px;
+      background: #111116;
+      color: #f4f4f8;
+      padding: 16px;
+      overflow: hidden;
+    }
+    h1 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+      color: #2563eb;
+      letter-spacing: 1px;
+    }
+    p.sub {
+      margin: 0 0 14px 0;
+      font-size: 12px;
+      color: #9e9eb3;
+    }
+    label {
+      display: block;
+      font-size: 11.5px;
+      color: #b4b4c7;
+      margin-bottom: 4px;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      background: #1a1a24;
+      border: 1px solid #2e2e3e;
+      border-radius: 7px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    input:focus { border-color: #2563eb; }
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      border: none;
+      border-radius: 7px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .primary { background: #2563eb; color: #fff; }
+    .primary:hover:not(:disabled) { background: #3b82f6; }
+    .secondary { background: #262635; color: #e8e8f2; }
+    .secondary:hover:not(:disabled) { background: #343448; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    .row input { flex: 1; }
+    .row button { width: auto; margin-top: 0; padding: 0 14px; }
+    .box {
+      margin-top: 12px;
+      padding: 10px;
+      background: #191923;
+      border: 1px solid #2d2d3d;
+      border-radius: 8px;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .info {
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #93c5fd;
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #4ade80;
+      min-height: 16px;
+    }
+    .status.err { color: #f87171; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>HAZAN</h1>
+  <p class="sub">Netflix, Disney+ &amp; Prime Video Es Zamanli Izleme &amp; Sohbet</p>
+
+  <div id="not-netflix" class="info hidden">
+    Oda <strong>olusturmak</strong> icin Netflix, Disney+ veya Prime Video'da bir film ac. Bir odaya <strong>katilmak</strong> icin asagiya linki veya oda kodunu yapistirman yeterli, film otomatik acilir.
+  </div>
+
+  <div id="main-area">
+    <label for="username">Adin</label>
+    <input id="username" type="text" placeholder="Orn: Boran" />
+
+    <label for="serverUrl">Sunucu Adresi (WebSocket)</label>
+    <input id="serverUrl" type="text" placeholder="wss://152.70.50.130.sslip.io" />
+
+    <div id="create-section">
+      <button id="createBtn" class="primary">&#127916; Yeni Oda Olustur &amp; Linki Kopyala</button>
+
+      <label for="joinInput">Davet Linki veya Oda Kodu ile Katil (Film Otomatik Acilir)</label>
+      <div class="row">
+        <input id="joinInput" type="text" placeholder="Link veya HZ49A2 yapistir" />
+        <button id="joinBtn" class="secondary">Katil</button>
+      </div>
+    </div>
+
+    <div id="active-section" class="hidden">
+      <div class="box">
+        <div><strong>Aktif Oda:</strong> <span id="activeRoom"></span></div>
+        <div style="margin-top:6px; color:#a1a1b5;" id="activeLink"></div>
+      </div>
+      <button id="copyActiveBtn" class="primary">&#128279; Davet Linkini Kopyala</button>
+      <button id="leaveBtn" class="secondary">Odadan Ayril</button>
+    </div>
+
+    <div id="statusMsg" class="status"></div>
+  </div>
+
+  <script>
+    const usernameInput = document.getElementById('username');
+    const serverUrlInput = document.getElementById('serverUrl');
+    const joinInput = document.getElementById('joinInput');
+    const createBtn = document.getElementById('createBtn');
+    const joinBtn = document.getElementById('joinBtn');
+    const copyActiveBtn = document.getElementById('copyActiveBtn');
+    const leaveBtn = document.getElementById('leaveBtn');
+    const notNetflixEl = document.getElementById('not-netflix');
+    const createSection = document.getElementById('create-section');
+    const activeSection = document.getElementById('active-section');
+    const activeRoomEl = document.getElementById('activeRoom');
+    const activeLinkEl = document.getElementById('activeLink');
+    const statusMsg = document.getElementById('statusMsg');
+
+    let currentShareLink = '';
+
+    function postToShell(payload) {
+      window.parent.postMessage({ source: 'HAZAN_REMOTE_POPUP', ...payload }, '*');
+    }
+
+    function reportHeight() {
+      const h = document.body.scrollHeight;
+      postToShell({ type: 'POPUP_RESIZE', height: h });
+    }
+
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = 'HZ';
+      for (let i = 0; i < 4; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return code;
+    }
+
+    function showStatus(text, isError = false) {
+      statusMsg.textContent = text;
+      statusMsg.classList.toggle('err', isError);
+      reportHeight();
+      setTimeout(() => {
+        if (statusMsg.textContent === text) statusMsg.textContent = '';
+      }, 4000);
+    }
+
+    function setActiveUI(roomId, shareLink) {
+      currentShareLink = shareLink;
+      activeRoomEl.textContent = roomId;
+      activeLinkEl.textContent = shareLink;
+      createSection.classList.add('hidden');
+      activeSection.classList.remove('hidden');
+      reportHeight();
+    }
+
+    function setIdleUI() {
+      createSection.classList.remove('hidden');
+      activeSection.classList.add('hidden');
+      reportHeight();
+    }
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (!msg || msg.source !== 'HAZAN_SHELL_POPUP') return;
+
+      if (msg.type === 'INIT_STATE') {
+        usernameInput.value = msg.username || '';
+        serverUrlInput.value = msg.serverUrl || 'wss://152.70.50.130.sslip.io';
+        const ts = msg.tabState || {};
+
+        if (!ts.isSupported) {
+          notNetflixEl.classList.remove('hidden');
+          createBtn.disabled = true;
+        } else if (ts.needsReload) {
+          notNetflixEl.classList.remove('hidden');
+          notNetflixEl.textContent = 'Eklentiyi guncellediysen izleme sekmesini bir kez yenile (F5).';
+          createBtn.disabled = true;
+        } else if (!ts.isWatchPage) {
+          notNetflixEl.classList.remove('hidden');
+          createBtn.disabled = true;
+        } else {
+          notNetflixEl.classList.add('hidden');
+          createBtn.disabled = false;
+        }
+
+        if (ts.connected && ts.roomId) {
+          setActiveUI(ts.roomId, ts.shareLink);
+        } else {
+          setIdleUI();
+        }
+        reportHeight();
+        return;
+      }
+
+      if (msg.type === 'STATUS') {
+        showStatus(msg.text, Boolean(msg.isError));
+        return;
+      }
+
+      if (msg.type === 'ACTION_RESULT') {
+        if (msg.action === 'CREATE') {
+          if (!msg.ok) {
+            showStatus(msg.error || 'Oda kurulamadi.', true);
+            return;
+          }
+          setActiveUI(msg.roomId, msg.shareLink);
+          showStatus(msg.copied ? 'Oda kuruldu! Davet linki kopyalandi.' : 'Oda kuruldu!');
+        } else if (msg.action === 'JOIN') {
+          if (!msg.ok) showStatus(msg.error || 'Katilinamadi.', true);
+        } else if (msg.action === 'COPY') {
+          showStatus(msg.ok ? 'Davet linki kopyalandi!' : 'Kopyalanamadi.', !msg.ok);
+        } else if (msg.action === 'LEAVE') {
+          setIdleUI();
+          showStatus('Odadan ayrildin.');
+        }
+      }
+    });
+
+    createBtn.addEventListener('click', () => {
+      postToShell({
+        type: 'ACTION_CREATE',
+        roomId: generateRoomCode(),
+        username: usernameInput.value,
+        serverUrl: serverUrlInput.value
+      });
+    });
+
+    joinBtn.addEventListener('click', () => {
+      postToShell({
+        type: 'ACTION_JOIN',
+        rawInput: joinInput.value,
+        username: usernameInput.value,
+        serverUrl: serverUrlInput.value
+      });
+    });
+
+    copyActiveBtn.addEventListener('click', () => {
+      if (!currentShareLink) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(currentShareLink)
+          .then(() => showStatus('Davet linki kopyalandi!'))
+          .catch(() => postToShell({ type: 'ACTION_COPY', link: currentShareLink }));
+      } else {
+        postToShell({ type: 'ACTION_COPY', link: currentShareLink });
+      }
+    });
+
+    leaveBtn.addEventListener('click', () => {
+      postToShell({ type: 'ACTION_LEAVE' });
+    });
+
+    usernameInput.addEventListener('change', () => {
+      postToShell({ type: 'SAVE_SETTINGS', username: usernameInput.value, serverUrl: serverUrlInput.value });
+    });
+
+    serverUrlInput.addEventListener('change', () => {
+      postToShell({ type: 'SAVE_SETTINGS', username: usernameInput.value, serverUrl: serverUrlInput.value, reconnectUI: true });
+    });
+
+    postToShell({ type: 'POPUP_READY' });
+    setTimeout(reportHeight, 50);
+  </script>
+</body>
+</html>
