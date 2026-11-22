@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hazan</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100vh;
+      background: #111116;
+      color: #f3f3f7;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 100%;
+      height: 100vh;
+      background: #111116;
+      color: #f3f3f7;
+      border-left: 1px solid #262632;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 14px 16px;
+      background: #17171f;
+      border-bottom: 1px solid #262632;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.4px;
+      color: #fff;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    .dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    .header-actions { display: flex; gap: 5px; }
+    .icon-btn {
+      background: #252533;
+      color: #e2e2eb;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: #343448; }
+    .icon-btn.danger:hover { background: #dc2626; color: #fff; }
+    .meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #a1a1b5;
+    }
+    .room-tag {
+      background: rgba(229, 9, 20, 0.16);
+      color: #ff5c66;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .messages::-webkit-scrollbar { width: 5px; }
+    .messages::-webkit-scrollbar-thumb { background: #2d2d3d; border-radius: 4px; }
+    .msg {
+      max-width: 85%;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    .msg.me {
+      align-self: flex-end;
+      background: #e50914;
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .msg.other {
+      align-self: flex-start;
+      background: #22222e;
+      color: #f3f3f7;
+      border-bottom-left-radius: 3px;
+    }
+    .msg-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      opacity: 0.78;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+    .msg-head-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .reply-btn {
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0 3px;
+      line-height: 1;
+      opacity: 0.45;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .msg:hover .reply-btn, .reply-btn:hover { opacity: 1; transform: scale(1.1); }
+    .msg-quote {
+      font-size: 11.5px;
+      padding: 5px 8px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      border-left: 3px solid #e50914;
+      background: rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .msg.me .msg-quote {
+      border-left-color: rgba(255, 255, 255, 0.85);
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .msg-quote-from {
+      font-weight: 700;
+      font-size: 10.5px;
+      opacity: 0.9;
+      margin-bottom: 2px;
+    }
+    .msg-quote-text {
+      opacity: 0.82;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .msg.highlight {
+      outline: 2px solid #facc15;
+      outline-offset: 2px;
+      transition: outline-color 0.3s ease;
+    }
+    .sys {
+      align-self: center;
+      font-size: 11.5px;
+      color: #9e9eb3;
+      background: #1a1a24;
+      padding: 4px 10px;
+      border-radius: 999px;
+      text-align: center;
+    }
+    .emojis {
+      display: flex;
+      justify-content: space-around;
+      padding: 6px 10px;
+      background: #15151d;
+      border-top: 1px solid #22222f;
+    }
+    .emoji-btn {
+      background: transparent;
+      border: none;
+      font-size: 17px;
+      cursor: pointer;
+      padding: 3px 6px;
+      border-radius: 6px;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .emoji-btn:hover { background: #252533; transform: scale(1.15); }
+    .reply-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 12px;
+      background: #1a1a25;
+      border-top: 1px solid #2a2a3a;
+      border-left: 3px solid #e50914;
+    }
+    .reply-bar.show { display: flex; }
+    .reply-bar-content { flex: 1; min-width: 0; }
+    .reply-bar-from {
+      font-size: 11px;
+      font-weight: 700;
+      color: #ff5c66;
+      margin-bottom: 1px;
+    }
+    .reply-bar-text {
+      font-size: 12px;
+      color: #c2c2d4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .reply-cancel {
+      background: transparent;
+      border: none;
+      color: #a1a1b5;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .reply-cancel:hover { background: #2a2a3a; color: #fff; }
+    .input-bar {
+      padding: 10px;
+      background: #17171f;
+      border-top: 1px solid #262632;
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input {
+      flex: 1;
+      background: #0d0d12;
+      border: 1px solid #2e2e3f;
+      border-radius: 8px;
+      color: #fff;
+      padding: 9px 11px;
+      font-size: 13.5px;
+      outline: none;
+    }
+    .chat-input:focus { border-color: #e50914; }
+    .send-btn {
+      background: #e50914;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 14px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .send-btn:hover { background: #f6121d; }
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="hz-sidebar">
+    <div class="header">
+      <div class="header-top">
+        <div class="brand">
+          <span class="dot" id="hz-dot"></span>
+          <span>HAZAN</span>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" id="hz-sync" title="Diger kisiyle saniyeyi esitle">&#128260; Esitle</button>
+          <button class="icon-btn" id="hz-copy" title="Davet linkini kopyala">&#128279; Link</button>
+          <button class="icon-btn" id="hz-hide" title="Sohbeti gizle">&raquo;</button>
+          <button class="icon-btn danger" id="hz-leave" title="Odadan ayril">&times;</button>
+        </div>
+      </div>
+      <div class="meta">
+        <span class="room-tag" id="hz-room">ODA: ---</span>
+        <span id="hz-users">Baglaniyor...</span>
+      </div>
+    </div>
+
+    <div class="messages" id="hz-messages"></div>
+
+    <div class="emojis" id="hz-emojis">
+      <button class="emoji-btn">&#10084;&#65039;</button>
+      <button class="emoji-btn">&#128514;</button>
+      <button class="emoji-btn">&#128561;</button>
+      <button class="emoji-btn">&#128293;</button>
+      <button class="emoji-btn">&#127871;</button>
+      <button class="emoji-btn">&#128557;</button>
+    </div>
+
+    <div class="reply-bar" id="hz-reply-bar">
+      <div class="reply-bar-content">
+        <div class="reply-bar-from" id="hz-reply-from"></div>
+        <div class="reply-bar-text" id="hz-reply-text"></div>
+      </div>
+      <button class="reply-cancel" id="hz-reply-cancel" title="Yaniti iptal et">&times;</button>
+    </div>
+
+    <div class="input-bar">
+      <input class="chat-input" id="hz-input" type="text" placeholder="Mesaj yaz..." autocomplete="off" />
+      <button class="send-btn" id="hz-send">Gonder</button>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('hz-messages');
+    const usersEl = document.getElementById('hz-users');
+    const statusDotEl = document.getElementById('hz-dot');
+    const roomLabelEl = document.getElementById('hz-room');
+    const inputEl = document.getElementById('hz-input');
+    const replyBarEl = document.getElementById('hz-reply-bar');
+    const replyFromEl = document.getElementById('hz-reply-from');
+    const replyTextEl = document.getElementById('hz-reply-text');
+
+    let activeReply = null;
+    let currentShareLink = '';
+
+    function postToShell(payload) {
+      window.parent.postMessage({ source: 'HAZAN_REMOTE_SIDEBAR', ...payload }, '*');
+    }
+
+    function setReplyTarget(target) {
+      if (!target) return;
+      activeReply = {
+        id: target.id || null,
+        from: target.from || 'Misafir',
+        text: target.text || ''
+      };
+      replyFromEl.textContent = activeReply.from;
+      replyTextEl.textContent = activeReply.text;
+      replyBarEl.classList.add('show');
+      postToShell({ type: 'UI_CHAT_FOCUS', focused: true });
+      try { inputEl.focus({ preventScroll: true }); } catch {}
+    }
+
+    function clearReplyTarget() {
+      activeReply = null;
+      replyBarEl.classList.remove('show');
+    }
+
+    function scrollToMessage(msgId) {
+      if (!msgId) return;
+      const targetEl = Array.from(messagesEl.children).find((el) => el.dataset && el.dataset.msgId === msgId);
+      if (!targetEl) return;
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetEl.classList.add('highlight');
+      setTimeout(() => targetEl.classList.remove('highlight'), 1200);
+    }
+
+    function renderSystemMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'sys';
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function renderChatMessage(from, text, timeStr, isMe, msgId, replyTo) {
+      const div = document.createElement('div');
+      div.className = `msg ${isMe ? 'me' : 'other'}`;
+      if (msgId) div.dataset.msgId = msgId;
+
+      const head = document.createElement('div');
+      head.className = 'msg-head';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = isMe ? 'Sen' : from;
+
+      const rightWrap = document.createElement('span');
+      rightWrap.className = 'msg-head-right';
+
+      const timeSpan = document.createElement('span');
+      timeSpan.textContent = timeStr || '';
+
+      const replyBtn = document.createElement('button');
+      replyBtn.className = 'reply-btn';
+      replyBtn.type = 'button';
+      replyBtn.title = 'Yanitla';
+      replyBtn.textContent = '\u21A9';
+      replyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.currentTarget.blur();
+        setReplyTarget({ id: msgId, from, text });
+      });
+
+      rightWrap.appendChild(timeSpan);
+      rightWrap.appendChild(replyBtn);
+      head.appendChild(nameSpan);
+      head.appendChild(rightWrap);
+      div.appendChild(head);
+
+      if (replyTo && replyTo.text) {
+        const quote = document.createElement('div');
+        quote.className = 'msg-quote';
+
+        const qFrom = document.createElement('div');
+        qFrom.className = 'msg-quote-from';
+        qFrom.textContent = replyTo.from || 'Misafir';
+
+        const qText = document.createElement('div');
+        qText.className = 'msg-quote-text';
+        qText.textContent = replyTo.text;
+
+        quote.appendChild(qFrom);
+        quote.appendChild(qText);
+        if (replyTo.id) {
+          quote.addEventListener('click', () => scrollToMessage(replyTo.id));
+        }
+        div.appendChild(quote);
+      }
+
+      const body = document.createElement('div');
+      body.textContent = text;
+
+      div.appendChild(body);
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function sendRawChat(text) {
+      const clean = String(text || '').trim();
+      if (!clean) return;
+      const payload = { type: 'UI_SEND_CHAT', text: clean };
+      if (activeReply) {
+        payload.replyTo = activeReply;
+        clearReplyTarget();
+      }
+      postToShell(payload);
+    }
+
+    function sendChatMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      sendRawChat(text);
+      inputEl.value = '';
+    }
+
+    inputEl.addEventListener('focus', () => {
+      postToShell({ type: 'UI_CHAT_FOCUS', focused: true });
+    });
+
+    inputEl.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendChatMessage();
+      } else if (e.key === 'Escape') {
+        if (activeReply) {
+          e.preventDefault();
+          clearReplyTarget();
+        } else {
+          postToShell({ type: 'UI_CHAT_FOCUS', focused: false });
+          inputEl.blur();
+        }
+      } else if (e.key === 'Tab') {
+        postToShell({ type: 'UI_CHAT_FOCUS', focused: false });
+      }
+    });
+
+    document.getElementById('hz-send').addEventListener('click', () => {
+      sendChatMessage();
+      try { inputEl.focus({ preventScroll: true }); } catch {}
+    });
+
+    document.getElementById('hz-reply-cancel').addEventListener('click', (e) => {
+      e.currentTarget.blur();
+      clearReplyTarget();
+    });
+
+    document.getElementById('hz-sync').addEventListener('click', (e) => {
+      e.currentTarget.blur();
+      postToShell({ type: 'UI_CHAT_FOCUS', focused: false });
+      postToShell({ type: 'UI_REQUEST_SYNC' });
+    });
+
+    document.getElementById('hz-emojis').addEventListener('click', (e) => {
+      if (e.target.classList.contains('emoji-btn')) {
+        e.target.blur();
+        sendRawChat(e.target.textContent);
+      }
+    });
+
+    document.getElementById('hz-copy').addEventListener('click', (e) => {
+      e.currentTarget.blur();
+      postToShell({ type: 'UI_CHAT_FOCUS', focused: false });
+      if (currentShareLink && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(currentShareLink)
+          .then(() => postToShell({ type: 'UI_COPY_LINK', copied: true }))
+          .catch(() => postToShell({ type: 'UI_COPY_LINK', copied: false }));
+      } else {
+        postToShell({ type: 'UI_COPY_LINK', copied: false });
+      }
+    });
+
+    document.getElementById('hz-hide').addEventListener('click', (e) => {
+      e.currentTarget.blur();
+      postToShell({ type: 'UI_HIDE' });
+    });
+
+    document.getElementById('hz-leave').addEventListener('click', (e) => {
+      e.currentTarget.blur();
+      postToShell({ type: 'UI_LEAVE' });
+    });
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (!msg || msg.source !== 'HAZAN_CONTENT_TO_UI') return;
+
+      if (msg.type === 'UI_INIT') {
+        roomLabelEl.textContent = `ODA: ${msg.roomId || '---'}`;
+        statusDotEl.classList.toggle('online', Boolean(msg.online));
+        usersEl.textContent = msg.usersText || 'Baglaniyor...';
+        currentShareLink = msg.shareLink || '';
+        messagesEl.innerHTML = '';
+        (msg.history || []).forEach((item) => {
+          if (item.kind === 'sys') renderSystemMessage(item.text);
+          else if (item.kind === 'chat') renderChatMessage(item.from, item.text, item.timeStr, item.isMe, item.msgId, item.replyTo);
+        });
+        return;
+      }
+
+      if (msg.type === 'UI_STATUS') {
+        statusDotEl.classList.toggle('online', Boolean(msg.online));
+        return;
+      }
+
+      if (msg.type === 'UI_USERS') {
+        usersEl.textContent = msg.text || '';
+        return;
+      }
+
+      if (msg.type === 'UI_SHARE_LINK') {
+        currentShareLink = msg.shareLink || '';
+        return;
+      }
+
+      if (msg.type === 'UI_SYSTEM') {
+        renderSystemMessage(msg.text);
+        return;
+      }
+
+      if (msg.type === 'UI_CHAT') {
+        renderChatMessage(msg.from, msg.text, msg.timeStr, msg.isMe, msg.msgId, msg.replyTo);
+        return;
+      }
+
+      if (msg.type === 'UI_RESTORE_FOCUS') {
+        try { inputEl.focus({ preventScroll: true }); } catch {}
+      }
+    });
+
+    postToShell({ type: 'SIDEBAR_READY' });
+  </script>
+</body>
+</html>
