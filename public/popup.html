@@ -16,7 +16,7 @@
     h1 {
       margin: 0 0 4px 0;
       font-size: 20px;
-      color: #e50914;
+      color: #2563eb;
       letter-spacing: 1px;
     }
     p.sub {
@@ -41,7 +41,7 @@
       font-size: 13px;
       outline: none;
     }
-    input:focus { border-color: #e50914; }
+    input:focus { border-color: #2563eb; }
     button {
       width: 100%;
       margin-top: 12px;
@@ -53,8 +53,8 @@
       cursor: pointer;
     }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .primary { background: #e50914; color: #fff; }
-    .primary:hover:not(:disabled) { background: #f6121d; }
+    .primary { background: #2563eb; color: #fff; }
+    .primary:hover:not(:disabled) { background: #3b82f6; }
     .secondary { background: #262635; color: #e8e8f2; }
     .secondary:hover:not(:disabled) { background: #343448; }
     .row { display: flex; gap: 8px; margin-top: 8px; }
@@ -102,7 +102,7 @@
     <input id="username" type="text" placeholder="Orn: Boran" />
 
     <label for="serverUrl">Sunucu Adresi (WebSocket)</label>
-    <input id="serverUrl" type="text" placeholder="wss://hazan.onrender.com" />
+    <input id="serverUrl" type="text" placeholder="wss://152.70.50.130.sslip.io" />
 
     <div id="create-section">
       <button id="createBtn" class="primary">&#127916; Yeni Oda Olustur &amp; Linki Kopyala</button>
@@ -191,7 +191,7 @@
 
       if (msg.type === 'INIT_STATE') {
         usernameInput.value = msg.username || '';
-        serverUrlInput.value = msg.serverUrl || 'wss://hazan.onrender.com';
+        serverUrlInput.value = msg.serverUrl || 'wss://152.70.50.130.sslip.io';
         const ts = msg.tabState || {};
 
         if (!ts.isSupported) {
