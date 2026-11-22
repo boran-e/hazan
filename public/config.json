@@ -1,6 +1,6 @@
 {
   "version": "1.1.0",
-  "defaultWsUrl": "wss://hazan.onrender.com",
+  "defaultWsUrl": "wss://152.70.50.130.sslip.io",
   "platforms": [
     {
       "id": "netflix",
@@ -51,6 +51,36 @@
         "[data-is-ad=\"true\"]"
       ],
       "adTextRegex": "^(reklam|ad)\\b"
+    },
+    {
+      "id": "primevideo",
+      "name": "Prime Video",
+      "hostIncludes": ["primevideo.com", "amazon.com"],
+      "watchPathRegex": "\\/(?:detail|gp\\/video\\/detail)\\/([A-Za-z0-9._-]+)",
+      "prefix": "pv:",
+      "shareUrlTemplate": "https://www.primevideo.com/detail/{id}?hazan={room}",
+      "profilePaths": ["/ap/signin", "/profiles"],
+      "profileSelectors": "[data-testid=\"profile-picker\"], .profiles-picker, [data-automation-id=\"profile-picker\"]",
+      "playerMode": "shadow_html5",
+      "layoutMode": "css",
+      "layoutCss": "#dv-web-player, .dv-player-fullscreen, .webPlayerSDKContainer, .atvwebplayersdk-player-container, .cascadesContainer { width: calc(100vw - 330px) !important; max-width: calc(100vw - 330px) !important; right: auto !important; transition: width 0.2s ease !important; }",
+      "adDetection": true,
+      "adSelectors": [
+        ".atvwebplayersdk-adtimeindicator-text",
+        ".atvwebplayersdk-ad-timer-text",
+        ".atvwebplayersdk-adbadge-text",
+        ".atvwebplayersdk-adskip-button",
+        "[class*=\"adtimeindicator\"]",
+        "[class*=\"ad-countdown\"]",
+        "[class*=\"adCountdown\"]",
+        "[data-testid*=\"ad-countdown\"]",
+        "[data-testid*=\"ad-timer\"]",
+        "[data-testid*=\"ad-badge\"]",
+        "[data-testid*=\"ad-label\"]",
+        "[data-ad=\"true\"]",
+        "[data-is-ad=\"true\"]"
+      ],
+      "adTextRegex": "^(reklam|ad|sponsorlu)\\b"
     }
   ]
 }
