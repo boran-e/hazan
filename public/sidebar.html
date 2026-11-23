@@ -229,6 +229,15 @@
       border-radius: 4px;
     }
     .reply-cancel:hover { background: #2a2a3a; color: #fff; }
+    .typing-indicator {
+      display: none;
+      padding: 4px 14px 6px 14px;
+      font-size: 11.5px;
+      font-style: italic;
+      color: #a1a1b5;
+      background: #17171f;
+    }
+    .typing-indicator.show { display: block; }
     .input-bar {
       padding: 10px;
       background: #17171f;
@@ -300,6 +309,7 @@
       <button class="reply-cancel" id="hz-reply-cancel" title="Yaniti iptal et">&times;</button>
     </div>
 
+    <div class="typing-indicator" id="hz-typing"></div>
     <div class="input-bar">
       <input class="chat-input" id="hz-input" type="text" placeholder="Mesaj yaz..." autocomplete="off" />
       <button class="send-btn" id="hz-send">Gonder</button>
@@ -421,6 +431,56 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    const typingEl = document.getElementById('hz-typing');
+    let typingStopTimer = null;
+    let lastTypingSentTs = 0;
+    let isCurrentlyTyping = false;
+    let remoteTypingTimer = null;
+
+    function setRemoteTyping(from, isTyping) {
+      if (remoteTypingTimer) {
+        clearTimeout(remoteTypingTimer);
+        remoteTypingTimer = null;
+      }
+      if (!typingEl) return;
+      if (!isTyping) {
+        typingEl.textContent = '';
+        typingEl.classList.remove('show');
+        return;
+      }
+      typingEl.textContent = (from || 'Biri') + ' yaz\u0131yor...';
+      typingEl.classList.add('show');
+      remoteTypingTimer = setTimeout(() => {
+        typingEl.textContent = '';
+        typingEl.classList.remove('show');
+      }, 2400);
+    }
+
+    function notifyTyping(active) {
+      if (active) {
+        const now = Date.now();
+        if (!isCurrentlyTyping || now - lastTypingSentTs > 1200) {
+          isCurrentlyTyping = true;
+          lastTypingSentTs = now;
+          postToShell({ type: 'UI_TYPING', typing: true });
+        }
+        if (typingStopTimer) clearTimeout(typingStopTimer);
+        typingStopTimer = setTimeout(() => {
+          notifyTyping(false);
+        }, 1600);
+      } else {
+        if (typingStopTimer) {
+          clearTimeout(typingStopTimer);
+          typingStopTimer = null;
+        }
+        if (isCurrentlyTyping) {
+          isCurrentlyTyping = false;
+          lastTypingSentTs = 0;
+          postToShell({ type: 'UI_TYPING', typing: false });
+        }
+      }
+    }
+
     function sendRawChat(text) {
       const clean = String(text || '').trim();
       if (!clean) return;
@@ -435,9 +495,15 @@
     function sendChatMessage() {
       const text = inputEl.value.trim();
       if (!text) return;
+      notifyTyping(false);
       sendRawChat(text);
       inputEl.value = '';
     }
+
+    inputEl.addEventListener('input', () => {
+      if (inputEl.value.trim().length > 0) notifyTyping(true);
+      else notifyTyping(false);
+    });
 
     inputEl.addEventListener('focus', () => {
       postToShell({ type: 'UI_CHAT_FOCUS', focused: true });
@@ -543,7 +609,13 @@
         return;
       }
 
+      if (msg.type === 'UI_TYPING') {
+        setRemoteTyping(msg.from, msg.typing);
+        return;
+      }
+
       if (msg.type === 'UI_CHAT') {
+        if (!msg.isMe) setRemoteTyping(null, false);
         renderChatMessage(msg.from, msg.text, msg.timeStr, msg.isMe, msg.msgId, msg.replyTo);
         return;
       }
