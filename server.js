@@ -314,6 +314,15 @@ wss.on('connection', (ws) => {
       return;
     }
 
+    if (msg.type === 'TYPING') {
+      broadcast(client.roomId, {
+        type: 'TYPING',
+        from: client.username,
+        typing: Boolean(msg.typing)
+      }, client);
+      return;
+    }
+
     if (msg.type === 'CHAT') {
       const text = String(msg.text || '').trim().slice(0, 500);
       if (!text) return;
